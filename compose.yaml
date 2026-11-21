@@ -1,0 +1,13 @@
+services:
+  stdio:
+    build: .
+    image: hkevents:local
+    stdin_open: true
+    entrypoint: ["hkevents"]
+    command: ["mcp"]
+
+  cli:
+    profiles: ["cli"]
+    build: .
+    image: hkevents:local
+    command: ["--help"]

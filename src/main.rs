@@ -137,8 +137,7 @@ async fn main() -> Result<()> {
             if let Some(query) = &query {
                 let needle = query.to_lowercase();
                 venues.retain(|venue| {
-                    venue.name_en.to_lowercase().contains(&needle)
-                        || venue.name_zh.contains(query)
+                    venue.name_en.to_lowercase().contains(&needle) || venue.name_zh.contains(query)
                 });
             }
             if cli.json {
