@@ -39,6 +39,30 @@ BIN="$(bash scripts/ensure-binary.sh)"
 It checks `$HKEVENTS_BIN`, `hkevents` on `PATH`, `scripts/install.sh`, then
 `cargo build --release --locked` in the repo root.
 
+### Install the binary directly
+
+`npx skills add` installs the skill files. If the binary is missing, install it
+with the release installer or cargo:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/hongkong-ai-labs/hongkong-events-skill/main/scripts/install.sh | sh
+# or
+cargo install --git https://github.com/hongkong-ai-labs/hongkong-events-skill --locked
+```
+
+Register it with any MCP client:
+
+```bash
+npx add-mcp "$(command -v hkevents) mcp" --name hongkong-events -a claude-code -a codex -a cursor -y
+claude mcp add hongkong-events -- hkevents mcp
+codex mcp add hongkong-events -- hkevents mcp
+```
+
+`add-mcp` detects the client configuration files in the current project; add
+`-g` for a global install. `$(command -v hkevents)` keeps the entry correct
+when the binary is on `PATH`; substitute an absolute path if your client does
+not inherit the shell `PATH`.
+
 ## CLI
 
 ```bash
@@ -53,6 +77,7 @@ $BIN list --json
 $BIN show 188273                       # full details
 $BIN venues --query "Town Hall"        # venue ids and coordinates
 $BIN mcp
+$BIN update --check
 ```
 
 Dates are Hong Kong dates. `--days 0` means no upper date bound; `--limit 0`
