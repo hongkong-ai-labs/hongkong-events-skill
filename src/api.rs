@@ -51,8 +51,16 @@ impl Event {
         if self.dates.is_empty() {
             return self.date_text.clone();
         }
-        let first = self.dates.first().map(|date| date.to_string()).unwrap_or_default();
-        let last = self.dates.last().map(|date| date.to_string()).unwrap_or_default();
+        let first = self
+            .dates
+            .first()
+            .map(|date| date.to_string())
+            .unwrap_or_default();
+        let last = self
+            .dates
+            .last()
+            .map(|date| date.to_string())
+            .unwrap_or_default();
         if first == last {
             first
         } else {
@@ -219,12 +227,12 @@ impl Client {
             self.text("eventDates.xml"),
             self.text("venues.xml")
         )?;
-        let events_doc: EventsDoc = quick_xml::de::from_str(&events_xml)
-            .context("parsing LCSD events.xml")?;
-        let dates_doc: DatesDoc = quick_xml::de::from_str(&dates_xml)
-            .context("parsing LCSD eventDates.xml")?;
-        let venues_doc: VenuesDoc = quick_xml::de::from_str(&venues_xml)
-            .context("parsing LCSD venues.xml")?;
+        let events_doc: EventsDoc =
+            quick_xml::de::from_str(&events_xml).context("parsing LCSD events.xml")?;
+        let dates_doc: DatesDoc =
+            quick_xml::de::from_str(&dates_xml).context("parsing LCSD eventDates.xml")?;
+        let venues_doc: VenuesDoc =
+            quick_xml::de::from_str(&venues_xml).context("parsing LCSD venues.xml")?;
 
         let mut dates: HashMap<String, Vec<NaiveDate>> = HashMap::new();
         for entry in dates_doc.events {
@@ -261,10 +269,7 @@ impl Client {
                 }
                 event_dates.sort_unstable();
                 event_dates.dedup();
-                let next_date = event_dates
-                    .iter()
-                    .copied()
-                    .find(|date| *date >= today);
+                let next_date = event_dates.iter().copied().find(|date| *date >= today);
                 let venue = venue_names
                     .get(raw.venueid.as_str())
                     .map(|name| (*name).to_string())
@@ -370,13 +375,9 @@ pub fn filter_events(events: &[Event], filter: &Filter) -> Vec<Event> {
                     return false;
                 }
             }
-            if filter.free_only
+            !(filter.free_only
                 && !event.price.to_lowercase().contains("free")
-                && !event.price.trim().is_empty()
-            {
-                return false;
-            }
-            true
+                && !event.price.trim().is_empty())
         })
         .cloned()
         .collect();

@@ -13,7 +13,7 @@ fn table(headers: &[&str], rows: &[Vec<String>]) -> String {
     }
     let mut out = String::new();
     out.push_str(
-        &headers
+        headers
             .iter()
             .enumerate()
             .map(|(index, header)| format!("{header:<width$}", width = widths[index]))
@@ -32,7 +32,7 @@ fn table(headers: &[&str], rows: &[Vec<String>]) -> String {
     out.push('\n');
     for row in rows {
         out.push_str(
-            &row.iter()
+            row.iter()
                 .enumerate()
                 .map(|(index, cell)| format!("{cell:<width$}", width = widths[index]))
                 .collect::<Vec<_>>()
@@ -88,7 +88,14 @@ pub fn show(event: &Event) -> String {
         out.push_str(&format!("Published: {}\n", event.date_text));
     }
     out.push_str(&format!("Venue:     {}\n", event.venue));
-    out.push_str(&format!("Price:     {}\n", if event.price.is_empty() { "-" } else { &event.price }));
+    out.push_str(&format!(
+        "Price:     {}\n",
+        if event.price.is_empty() {
+            "-"
+        } else {
+            &event.price
+        }
+    ));
     if !event.duration.is_empty() {
         out.push_str(&format!("Duration:  {}\n", event.duration));
     }
