@@ -53,6 +53,7 @@ $BIN list --json
 $BIN show 188273                       # full details
 $BIN venues --query "Town Hall"        # venue ids and coordinates
 $BIN mcp
+$BIN update --check
 ```
 
 Dates are Hong Kong dates. `--days 0` means no upper date bound; `--limit 0`
