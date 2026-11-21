@@ -47,6 +47,7 @@ hkevents list --json
 hkevents show 188273
 hkevents venues --query "Town Hall"
 hkevents mcp
+hkevents update --check
 ```
 
 ## MCP
