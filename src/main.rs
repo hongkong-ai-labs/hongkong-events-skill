@@ -3,6 +3,7 @@
 mod api;
 mod mcp;
 mod render;
+mod sources;
 
 use anyhow::{Result, bail};
 use chrono::NaiveDate;
@@ -48,10 +49,15 @@ enum Command {
         /// Only programmes whose price says Free
         #[arg(long)]
         free: bool,
+        /// Only these source slugs (comma-separated; default all compiled in)
+        #[arg(long, value_delimiter = ',')]
+        source: Vec<String>,
         /// Maximum rows (default 30; 0 means all)
         #[arg(long, short, default_value_t = 30)]
         limit: usize,
     },
+    /// List the event sources compiled into this binary
+    Sources,
     /// Full details for one programme id
     Show {
         /// Programme id from `list`
@@ -97,6 +103,7 @@ async fn main() -> Result<()> {
             venue,
             query,
             free,
+            source,
             limit,
         } => {
             let from = match from {
@@ -111,7 +118,10 @@ async fn main() -> Result<()> {
             } else {
                 Some(from + chrono::Days::new(days as u64))
             };
-            let index = client.load().await?;
+            let index = client.load(days).await?;
+            for warning in &index.warnings {
+                eprintln!("warning: {warning}");
+            }
             let events = api::filter_events(
                 &index.events,
                 &Filter {
@@ -119,6 +129,7 @@ async fn main() -> Result<()> {
                     to,
                     venue,
                     query,
+                    sources: source,
                     free_only: free,
                     limit,
                 },
@@ -130,7 +141,10 @@ async fn main() -> Result<()> {
             }
         }
         Command::Show { id } => {
-            let index = client.load().await?;
+            let index = client.load(365).await?;
+            for warning in &index.warnings {
+                eprintln!("warning: {warning}");
+            }
             let event = index
                 .events
                 .iter()
@@ -143,7 +157,10 @@ async fn main() -> Result<()> {
             }
         }
         Command::Venues { query } => {
-            let index = client.load().await?;
+            let index = client.load(0).await?;
+            for warning in &index.warnings {
+                eprintln!("warning: {warning}");
+            }
             let mut venues = index.venues;
             if let Some(query) = &query {
                 let needle = query.to_lowercase();
@@ -155,6 +172,16 @@ async fn main() -> Result<()> {
                 println!("{}", serde_json::to_string_pretty(&venues)?);
             } else {
                 println!("{}", render::venues(&venues));
+            }
+        }
+        Command::Sources => {
+            let sources = Client::sources();
+            if cli.json {
+                println!("{}", serde_json::to_string_pretty(&sources)?);
+            } else {
+                for source in sources {
+                    println!("{:<12} {}", source.name, source.kind);
+                }
             }
         }
         Command::Update { check, force } => {

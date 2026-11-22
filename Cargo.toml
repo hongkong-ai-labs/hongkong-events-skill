@@ -3,7 +3,7 @@ name = "hongkong-events-skill"
 version = "0.1.0"
 edition = "2024"
 rust-version = "1.89"
-description = "Hong Kong LCSD cultural events as a CLI and an MCP server"
+description = "Hong Kong events from official, ticketing and venue sources as a CLI and MCP server"
 license = "MIT"
 repository = "https://github.com/hongkong-ai-labs/hongkong-events-skill"
 readme = "README.md"
@@ -14,12 +14,33 @@ categories = ["command-line-utilities"]
 name = "hkevents"
 path = "src/main.rs"
 
+[features]
+default = ["source-lcsd", "source-popticket", "source-partner", "source-venues"]
+# Official LCSD cultural-programme XML feed.
+source-lcsd = ["dep:quick-xml"]
+# POPTICKET public event listing.
+source-popticket = []
+# Licensed Cityline/Ticketflap JSON export; needs HKEVENTS_PARTNER_FEED.
+source-partner = []
+# All venue and promoter calendars.
+source-venues = [
+    "source-taikwun",
+    "source-awe",
+    "source-mplus",
+    "source-livenation",
+]
+source-taikwun = ["dep:scraper"]
+source-awe = ["dep:scraper"]
+source-mplus = ["dep:scraper"]
+source-livenation = ["dep:scraper"]
+
 [dependencies]
 anyhow = "1"
 chrono = { version = "0.4", features = ["serde"] }
 clap = { version = "4", features = ["derive"] }
-quick-xml = { version = "0.42", features = ["serialize"] }
-reqwest = { version = "0.12", default-features = false, features = ["rustls-tls"] }
+quick-xml = { version = "0.42", features = ["serialize"], optional = true }
+reqwest = { version = "0.12", default-features = false, features = ["rustls-tls", "cookies", "json"] }
+scraper = { version = "0.24", optional = true }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 tokio = { version = "1", features = ["macros", "rt-multi-thread"] }

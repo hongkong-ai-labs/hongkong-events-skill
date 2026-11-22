@@ -1,27 +1,32 @@
 ---
 name: hongkong-events-skill
-description: Hong Kong LCSD cultural programmes — concerts, theatre, dance, exhibitions, film, workshops and free entertainment in LCSD venues. Use for questions about what's on in Hong Kong, event dates, venues, ticket prices, or upcoming cultural performances.
+description: Hong Kong events — LCSD cultural programmes plus POPTICKET, Tai Kwun, AsiaWorld-Expo, M+ and Live Nation calendars. Use for questions about what's on in Hong Kong, concerts, theatre, exhibitions, event dates, venues, ticket prices, or upcoming performances.
 license: MIT
 ---
 
-# Hong Kong cultural events
+# Hong Kong events
 
-`hkevents` is a Rust CLI and MCP server for the Leisure and Cultural Services
-Department's Cultural Programmes open data. It needs no API key and no account.
-It is an independent, unofficial project.
+`hkevents` is a Rust CLI and MCP server for Hong Kong event listings. It reads
+the Leisure and Cultural Services Department's open data plus POPTICKET and
+public venue and promoter calendars. It needs no API key and no account. It is
+an independent, unofficial project.
 
 Use it when the user asks about:
 
 - what's on in Hong Kong this week, this month or on a date
 - a concert, play, dance, opera, film, exhibition or workshop
-- events at a venue such as the Cultural Centre, City Hall, a town hall or a
-  public library
+- events at a venue such as the Cultural Centre, City Hall, a town hall, Tai
+  Kwun, AsiaWorld-Expo or M+
+- concerts and tours promoted by Live Nation HK
 - free cultural programmes
 - ticket price, age limit, presenter, enquiry number or the organiser's link
 
-The feed covers **current and forthcoming LCSD cultural programmes**. It is
-not a complete list of every event in Hong Kong: commercial concerts, private
-gallery shows, district festivals and venue-hire events may be absent.
+The sources cover **current and forthcoming events** from LCSD, POPTICKET,
+Tai Kwun, AsiaWorld-Expo, M+ and Live Nation HK. A licensed Cityline or
+Ticketflap JSON export can be added through `HKEVENTS_PARTNER_FEED`. This is
+still not a complete list of every event in Hong Kong: unlicensed Cityline and
+Ticketflap inventory, private gallery shows, district festivals and venue-hire
+events may be absent.
 
 ## Before first use
 
@@ -72,7 +77,9 @@ $BIN list --from 2026-12-01 --days 31
 $BIN list --venue "Cultural Centre"
 $BIN list --query jazz
 $BIN list --free
+$BIN list --source popticket --limit 10
 $BIN list --json
+$BIN sources                           # sources compiled into this binary
 
 $BIN show 188273                       # full details
 $BIN venues --query "Town Hall"        # venue ids and coordinates
@@ -82,28 +89,31 @@ $BIN update --check
 
 Dates are Hong Kong dates. `--days 0` means no upper date bound; `--limit 0`
 means no row limit. `--query` searches the English and Chinese titles, the
-description and the presenter.
+description and the presenter. `--source` takes comma-separated source slugs;
+omit it to search everything compiled in.
 
 ### What a listing contains
 
 | Field | Meaning |
 | --- | --- |
+| `source` | Source slug: `lcsd`, `popticket`, `partner`, `taikwun`, `awe`, `mplus` or `livenation` |
 | `next_date` | First performance on or after today |
-| `dates` | Every performance date in the current run |
-| `date_text` | Original LCSD date text, including times |
-| `venue` | Venue name resolved from the venue id |
+| `dates` | Every published performance or exhibition date |
+| `date_text` | Original date text |
+| `venue` | Venue name, including the hall where published |
 | `price` | Published price text, or `Free` / `Free Activities` |
-| `category`, `subcategory` | Raw LCSD category codes |
+| `category`, `subcategory` | Source category or raw LCSD codes |
 | `duration` | Running time or duration text |
 | `age_limit` | Age guidance |
 | `presenter` | Presenter or organiser |
 | `enquiry` | Enquiry phone number |
 | `url` | Presenter or ticketing link |
-| `description` | Full English description |
+| `description` | Full description when the source publishes one |
 
-`category` is the raw code (`inc4`, etc.) because LCSD does not publish a
-stable label table in the feed. Do not guess a human category from the code;
-use the title, description and venue instead.
+For LCSD, `category` is the raw code (`inc4`, etc.) because LCSD does not
+publish a stable label table. Do not guess a human category from the code; use
+the title, description and venue instead. External sources often leave price,
+duration and description empty rather than inventing values.
 
 ## MCP
 
@@ -122,14 +132,17 @@ Tools:
 
 | Tool | Arguments |
 | --- | --- |
-| `list_hk_events` | `{ from?, days?, venue?, query?, free?, limit? }` |
+| `list_hk_events` | `{ from?, days?, venue?, source?, query?, free?, limit? }` |
 | `get_hk_event` | `{ id }` |
 | `list_event_venues` | `{ query? }` |
+| `list_event_sources` | `{}` |
 
 ## Answering patterns
 
 - "What's on this weekend?" → `list --days 7 --limit 20`; mention the date,
-  venue and price, not just the title.
+  venue, source and price, not just the title.
+- "Any gigs?" → `list --source popticket,livenation --query live`.
+- "What's on at AsiaWorld-Expo?" → `list --source awe --venue AsiaWorld`.
 - "Anything free?" → `list --free`.
 - "Is there a concert at the Cultural Centre?" → `list --venue "Cultural
   Centre" --query concert`.
@@ -147,11 +160,23 @@ Tools:
 - Ticket links point to the presenter or URBTIX. This tool does not check
   availability, sell tickets or hold seats.
 - `price` is published text, not a live inventory.
-- The list is LCSD programmes, not all Hong Kong events.
-- Not an official LCSD channel. Check the venue or URBTIX for confirmation.
+- The list covers the compiled-in sources, not all Hong Kong events. Cityline,
+  Ticketflap, Timable and social platforms are not scraped.
+- Not an official channel of LCSD, POPTICKET or any venue. Check the ticketing
+  page or venue for confirmation.
+- Venue calendars publish HTML and can change without notice. A failed source
+  is reported as a warning while the others still return results.
 
-## Source
+## Sources
 
-`https://www.lcsd.gov.hk/datagovhk/event/events.xml`,
-`eventDates.xml` and `venues.xml`, published under DATA.GOV.HK. Responses are
-cached for 10 minutes in-process.
+- LCSD: `https://www.lcsd.gov.hk/datagovhk/event/events.xml`,
+  `eventDates.xml`, `venues.xml`, published under DATA.GOV.HK.
+- POPTICKET: `https://www.popticket.hk/en/events` and its public listing API.
+- Tai Kwun: `https://www.taikwun.hk/en/whats-on`.
+- AsiaWorld-Expo: `https://www.asiaworld-expo.com/en-us/whats-on/upcoming-events`.
+- M+: `https://www.mplus.org.hk/en/exhibitions/`.
+- Live Nation HK: `https://www.livenation.hk/`.
+- Licensed partner export: set `HKEVENTS_PARTNER_FEED` to a JSON path or URL.
+
+Event data remains subject to each publisher's terms; link to the original
+page. Responses are not cached between processes.

@@ -1,4 +1,4 @@
-//! MCP over stdio for LCSD cultural programmes.
+//! MCP over stdio for Hong Kong event sources.
 
 use std::io::{BufRead, Write};
 
@@ -85,13 +85,14 @@ fn tools() -> Value {
     json!({ "tools": [
         {
             "name": "list_hk_events",
-            "description": "Upcoming LCSD cultural programmes in Hong Kong, filtered by date, venue, free-text query and free admission.",
+            "description": "Upcoming Hong Kong events from the compiled-in sources, filtered by date, venue, source, free-text query and free admission.",
             "inputSchema": {
                 "type": "object",
                 "properties": {
                     "from": {"type": "string", "description": "First date, YYYY-MM-DD. Default today."},
                     "days": {"type": "integer", "minimum": 0, "description": "Days from `from`; 0 means all. Default 30."},
                     "venue": {"type": "string", "description": "Venue name substring."},
+                    "source": {"type": "string", "description": "Comma-separated source slugs, for example lcsd,popticket. Default all compiled in."},
                     "query": {"type": "string", "description": "Free-text search in title, description and presenter."},
                     "free": {"type": "boolean", "description": "Only programmes marked Free."},
                     "limit": {"type": "integer", "minimum": 0, "description": "Maximum rows; 0 means all. Default 30."}
@@ -100,7 +101,7 @@ fn tools() -> Value {
         },
         {
             "name": "get_hk_event",
-            "description": "Full details for one LCSD cultural programme id.",
+            "description": "Full details for one event id from list_hk_events.",
             "inputSchema": {
                 "type": "object",
                 "properties": {"id": {"type": "string", "description": "Programme id from list_hk_events."}},
@@ -114,6 +115,11 @@ fn tools() -> Value {
                 "type": "object",
                 "properties": {"query": {"type": "string", "description": "Venue name or district substring."}}
             }
+        },
+        {
+            "name": "list_event_sources",
+            "description": "Event sources compiled into this server, with their kind (official, ticketing, venue or promoter).",
+            "inputSchema": {"type": "object", "properties": {}}
         }
     ]})
 }
@@ -149,7 +155,10 @@ async fn call(client: &Client, id: Option<Value>, params: Option<&Value>) -> Val
                     .and_then(Value::as_u64)
                     .map(|value| value as usize)
                     .unwrap_or(30);
-                let index = client.load().await?;
+                let index = client.load(days).await?;
+                for warning in &index.warnings {
+                    eprintln!("warning: {warning}");
+                }
                 let events = api::filter_events(
                     &index.events,
                     &Filter {
@@ -163,6 +172,7 @@ async fn call(client: &Client, id: Option<Value>, params: Option<&Value>) -> Val
                             .get("query")
                             .and_then(Value::as_str)
                             .map(ToOwned::to_owned),
+                        sources: source_filter(args.get("source")),
                         free_only: args.get("free").and_then(Value::as_bool).unwrap_or(false),
                         limit,
                     },
@@ -174,16 +184,16 @@ async fn call(client: &Client, id: Option<Value>, params: Option<&Value>) -> Val
                     .get("id")
                     .and_then(Value::as_str)
                     .ok_or_else(|| anyhow::anyhow!("id is required"))?;
-                let index = client.load().await?;
+                let index = client.load(365).await?;
                 let event = index
                     .events
                     .iter()
                     .find(|event| event.id == id)
-                    .ok_or_else(|| anyhow::anyhow!("no programme with id {id}"))?;
+                    .ok_or_else(|| anyhow::anyhow!("no event with id {id}"))?;
                 Ok(serde_json::to_value(event)?)
             }
             "list_event_venues" => {
-                let index = client.load().await?;
+                let index = client.load(0).await?;
                 let mut venues = index.venues;
                 if let Some(query) = args.get("query").and_then(Value::as_str) {
                     let needle = query.to_lowercase();
@@ -194,6 +204,7 @@ async fn call(client: &Client, id: Option<Value>, params: Option<&Value>) -> Val
                 }
                 Ok(serde_json::to_value(venues)?)
             }
+            "list_event_sources" => Ok(serde_json::to_value(Client::sources())?),
             other => bail!("unknown tool: {other}"),
         }
     }
@@ -217,6 +228,26 @@ async fn call(client: &Client, id: Option<Value>, params: Option<&Value>) -> Val
                 "isError": true
             }),
         ),
+    }
+}
+
+fn source_filter(value: Option<&Value>) -> Vec<String> {
+    match value {
+        Some(Value::String(value)) => value
+            .split(',')
+            .map(str::trim)
+            .filter(|value| !value.is_empty())
+            .map(ToOwned::to_owned)
+            .collect(),
+        Some(Value::Array(values)) => values
+            .iter()
+            .filter_map(Value::as_str)
+            .flat_map(|value| value.split(','))
+            .map(str::trim)
+            .filter(|value| !value.is_empty())
+            .map(ToOwned::to_owned)
+            .collect(),
+        _ => Vec::new(),
     }
 }
 
