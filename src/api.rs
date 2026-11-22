@@ -459,4 +459,153 @@ mod tests {
         );
         assert!(none.is_empty());
     }
+
+    fn event(id: &str, title: &str, venue: &str, price: &str, dates: Vec<NaiveDate>) -> Event {
+        Event {
+            id: id.to_string(),
+            title_en: title.to_string(),
+            title_zh: String::new(),
+            category: "inc4".to_string(),
+            subcategory: "inc4sc1".to_string(),
+            venue_id: "100".to_string(),
+            venue: venue.to_string(),
+            next_date: dates.first().copied(),
+            dates,
+            date_text: String::new(),
+            duration: String::new(),
+            price: price.to_string(),
+            age_limit: String::new(),
+            description: String::new(),
+            url: None,
+            presenter: String::new(),
+            enquiry: String::new(),
+        }
+    }
+
+    #[test]
+    fn date_summary_handles_empty_single_and_range() {
+        let mut empty = event("1", "Show", "Tai Po", "", Vec::new());
+        empty.date_text = "19/12/2026 (Sat)".to_string();
+        assert_eq!(empty.date_summary(), "19/12/2026 (Sat)");
+
+        let single = event(
+            "1",
+            "Show",
+            "Tai Po",
+            "",
+            vec![NaiveDate::from_ymd_opt(2026, 12, 19).unwrap()],
+        );
+        assert_eq!(single.date_summary(), "2026-12-19");
+
+        let range = event(
+            "1",
+            "Show",
+            "Tai Po",
+            "",
+            vec![
+                NaiveDate::from_ymd_opt(2026, 12, 19).unwrap(),
+                NaiveDate::from_ymd_opt(2026, 12, 20).unwrap(),
+            ],
+        );
+        assert_eq!(range.date_summary(), "2026-12-19 to 2026-12-20 (2 dates)");
+    }
+
+    #[test]
+    fn dates_from_text_ignores_invalid_tokens() {
+        let dates = dates_from_text(
+            "19/12/2026 (Sat) 19:30\n20/12/2026 (Sun) 15:00\n31/02/2026\nnot a date",
+        );
+        assert_eq!(
+            dates,
+            vec![
+                NaiveDate::from_ymd_opt(2026, 12, 19).unwrap(),
+                NaiveDate::from_ymd_opt(2026, 12, 20).unwrap(),
+            ]
+        );
+        assert!(dates_from_text("").is_empty());
+    }
+
+    #[test]
+    fn filters_by_date_window_venue_and_limit() {
+        let december = event(
+            "1",
+            "Jazz Night",
+            "Tai Po Civic Centre",
+            "$200",
+            vec![NaiveDate::from_ymd_opt(2026, 12, 19).unwrap()],
+        );
+        let january = event(
+            "2",
+            "Opera Gala",
+            "Hong Kong Cultural Centre",
+            "$400",
+            vec![NaiveDate::from_ymd_opt(2027, 1, 5).unwrap()],
+        );
+        let undated = event("3", "Exhibition", "Tai Po", "Free", Vec::new());
+        let events = vec![december, january, undated];
+
+        let after = filter_events(
+            &events,
+            &Filter {
+                from: Some(NaiveDate::from_ymd_opt(2026, 12, 20).unwrap()),
+                ..Filter::default()
+            },
+        );
+        assert_eq!(after.len(), 1);
+        assert_eq!(after[0].id, "2");
+
+        let before = filter_events(
+            &events,
+            &Filter {
+                to: Some(NaiveDate::from_ymd_opt(2026, 12, 31).unwrap()),
+                ..Filter::default()
+            },
+        );
+        assert_eq!(before.len(), 2);
+
+        let tai_po = filter_events(
+            &events,
+            &Filter {
+                venue: Some("TAI PO".to_string()),
+                ..Filter::default()
+            },
+        );
+        assert_eq!(tai_po.len(), 2);
+
+        let limited = filter_events(
+            &events,
+            &Filter {
+                limit: 1,
+                ..Filter::default()
+            },
+        );
+        assert_eq!(limited.len(), 1);
+    }
+
+    #[test]
+    fn free_only_treats_an_empty_price_as_free() {
+        let free = event("1", "Free Show", "Tai Po", "Free", Vec::new());
+        let priced = event("2", "Paid Show", "Tai Po", "$200", Vec::new());
+        let unstated = event("3", "Unstated Show", "Tai Po", "", Vec::new());
+
+        let filtered = filter_events(
+            &[free, priced, unstated],
+            &Filter {
+                free_only: true,
+                ..Filter::default()
+            },
+        );
+        let ids: Vec<&str> = filtered.iter().map(|event| event.id.as_str()).collect();
+        assert_eq!(ids, vec!["1", "3"]);
+    }
+
+    #[test]
+    fn non_empty_trims_and_rejects_blank_values() {
+        assert_eq!(
+            non_empty("  https://example.test  ").as_deref(),
+            Some("https://example.test")
+        );
+        assert_eq!(non_empty("   "), None);
+        assert_eq!(non_empty(""), None);
+    }
 }
