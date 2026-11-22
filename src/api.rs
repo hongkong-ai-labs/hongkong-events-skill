@@ -324,6 +324,7 @@ mod tests {
     fn event(id: &str, title: &str, venue: &str, price: &str, dates: Vec<NaiveDate>) -> Event {
         Event {
             id: id.to_string(),
+            source: "lcsd".to_string(),
             title_en: title.to_string(),
             title_zh: String::new(),
             category: "inc4".to_string(),
@@ -371,9 +372,10 @@ mod tests {
         assert_eq!(range.date_summary(), "2026-12-19 to 2026-12-20 (2 dates)");
     }
 
+    #[cfg(feature = "source-lcsd")]
     #[test]
     fn dates_from_text_ignores_invalid_tokens() {
-        let dates = dates_from_text(
+        let dates = crate::sources::lcsd::dates_from_text(
             "19/12/2026 (Sat) 19:30\n20/12/2026 (Sun) 15:00\n31/02/2026\nnot a date",
         );
         assert_eq!(
@@ -383,7 +385,7 @@ mod tests {
                 NaiveDate::from_ymd_opt(2026, 12, 20).unwrap(),
             ]
         );
-        assert!(dates_from_text("").is_empty());
+        assert!(crate::sources::lcsd::dates_from_text("").is_empty());
     }
 
     #[test]

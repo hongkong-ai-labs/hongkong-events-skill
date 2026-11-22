@@ -151,6 +151,7 @@ mod tests {
     fn event() -> Event {
         Event {
             id: "1".to_string(),
+            source: "lcsd".to_string(),
             title_en: "Jazz Night".to_string(),
             title_zh: String::new(),
             category: "inc4".to_string(),

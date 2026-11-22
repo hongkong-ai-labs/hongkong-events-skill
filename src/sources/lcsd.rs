@@ -182,7 +182,7 @@ async fn text(http: &reqwest::Client, path: &str) -> Result<String> {
     Ok(body)
 }
 
-fn dates_from_text(text: &str) -> Vec<NaiveDate> {
+pub(crate) fn dates_from_text(text: &str) -> Vec<NaiveDate> {
     // `predateE` uses `dd/mm/yyyy` and may contain several lines.
     let mut dates = Vec::new();
     for token in text.split(|character: char| !(character.is_ascii_digit() || character == '/')) {
