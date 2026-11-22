@@ -1,9 +1,11 @@
 # hkevents
 
-Hong Kong LCSD cultural programmes as a Rust CLI and MCP server.
+Hong Kong events as a Rust CLI and MCP server.
 
-Reads the official, keyless LCSD Cultural Programmes dataset: programme
-details, exact performance dates and venue names.
+Brings together the official LCSD Cultural Programmes dataset, POPTICKET's
+public event listing, and venue and promoter calendars from Tai Kwun,
+AsiaWorld-Expo, M+ and Live Nation HK. Every source is a separate Rust module
+behind a Cargo feature, so a build can include only the feeds it needs.
 
 ## Install
 
@@ -50,9 +52,12 @@ hkevents list --days 7 --limit 10
 hkevents list --from 2026-12-01 --days 31
 hkevents list --venue "Cultural Centre" --query concert
 hkevents list --free
+hkevents list --source popticket --limit 10
 hkevents list --json
 hkevents show 188273
+hkevents show popticket:operation-oops-26
 hkevents venues --query "Town Hall"
+hkevents sources
 hkevents mcp
 hkevents update --check
 ```
@@ -81,16 +86,59 @@ when the binary is on `PATH`; substitute an absolute path if your client does
 not inherit the shell `PATH`.
 
 
-Tools: `list_hk_events`, `get_hk_event`, `list_event_venues`.
+Tools: `list_hk_events`, `get_hk_event`, `list_event_venues`,
+`list_event_sources`.
+
+## Sources
+
+| Source | Coverage | Access |
+| --- | --- | --- |
+| `lcsd` | LCSD cultural programmes | Official XML feed |
+| `popticket` | Theatre, music, dance, stand-up and design | Public listing API used by the site |
+| `taikwun` | Tai Kwun exhibitions, performances and events | Public calendar HTML |
+| `awe` | AsiaWorld-Expo concerts, expos and sports | Public calendar HTML |
+| `mplus` | M+ exhibitions | Public calendar HTML |
+| `livenation` | Live Nation HK concerts and tours | Public calendar HTML |
+
+Venue and promoter calendars publish HTML, not a shared API. Each adapter is
+small and fails independently: a broken calendar produces a warning and the
+other sources still return results. POPTICKET's public listing API is used the
+same way its own event page uses it; the skill does not bypass bot protection
+or call account, cart or checkout endpoints.
+
+### Compile-time source selection
+
+All sources are enabled by default. Build a smaller binary with:
+
+```bash
+# Only the official LCSD feed
+cargo build --release --no-default-features --features source-lcsd
+
+# LCSD plus POPTICKET
+cargo build --release --no-default-features \
+  --features source-lcsd,source-popticket
+
+# One venue calendar
+cargo build --release --no-default-features --features source-taikwun
+```
+
+The features are `source-lcsd`, `source-popticket`, `source-taikwun`,
+`source-awe`, `source-mplus` and `source-livenation`. `source-venues` enables
+all four venue/promoter calendars. Run `hkevents sources` to see what a binary
+contains.
 
 ## Data
+
+Official LCSD files:
 
 - `https://www.lcsd.gov.hk/datagovhk/event/events.xml`
 - `https://www.lcsd.gov.hk/datagovhk/event/eventDates.xml`
 - `https://www.lcsd.gov.hk/datagovhk/event/venues.xml`
 
-Coverage is current and forthcoming LCSD cultural programmes, not every event
-in Hong Kong. Dates, prices and line-ups can change; check URBTIX or the venue.
+Commercial and venue sources are listed in [Sources](#sources). Coverage is
+current and forthcoming events, not every event in Hong Kong. Dates, prices
+and line-ups can change; check the ticketing page or venue. Event data remains
+subject to each publisher's terms; always link to the original page.
 
 ## Run modes and deployment
 

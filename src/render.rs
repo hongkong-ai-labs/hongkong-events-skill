@@ -67,13 +67,17 @@ pub fn list(events: &[Event]) -> String {
                     .unwrap_or_else(|| event.date_summary()),
                 truncate(&event.title_en, 56),
                 truncate(&event.venue, 28),
+                event.source.clone(),
                 event.price.clone(),
             ]
         })
         .collect();
-    table(&["NEXT DATE", "PROGRAMME", "VENUE", "PRICE"], &rows)
-        .trim_end()
-        .to_string()
+    table(
+        &["NEXT DATE", "PROGRAMME", "VENUE", "SOURCE", "PRICE"],
+        &rows,
+    )
+    .trim_end()
+    .to_string()
 }
 
 pub fn show(event: &Event) -> String {
@@ -88,6 +92,7 @@ pub fn show(event: &Event) -> String {
         out.push_str(&format!("Published: {}\n", event.date_text));
     }
     out.push_str(&format!("Venue:     {}\n", event.venue));
+    out.push_str(&format!("Source:    {}\n", event.source));
     out.push_str(&format!(
         "Price:     {}\n",
         if event.price.is_empty() {
