@@ -10,6 +10,8 @@
 
 #[cfg(feature = "source-lcsd")]
 pub mod lcsd;
+#[cfg(feature = "source-partner")]
+pub mod partner;
 #[cfg(feature = "source-popticket")]
 pub mod popticket;
 #[cfg(feature = "source-venues")]
@@ -33,6 +35,11 @@ pub fn available() -> Vec<SourceInfo> {
         SourceInfo {
             name: "popticket",
             kind: "ticketing",
+        },
+        #[cfg(feature = "source-partner")]
+        SourceInfo {
+            name: "partner",
+            kind: "partner",
         },
         #[cfg(feature = "source-taikwun")]
         SourceInfo {

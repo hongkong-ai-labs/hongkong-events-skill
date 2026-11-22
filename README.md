@@ -95,6 +95,7 @@ Tools: `list_hk_events`, `get_hk_event`, `list_event_venues`,
 | --- | --- | --- |
 | `lcsd` | LCSD cultural programmes | Official XML feed |
 | `popticket` | Theatre, music, dance, stand-up and design | Public listing API used by the site |
+| `partner` | Licensed Cityline/Ticketflap export | Local path or URL in `HKEVENTS_PARTNER_FEED` |
 | `taikwun` | Tai Kwun exhibitions, performances and events | Public calendar HTML |
 | `awe` | AsiaWorld-Expo concerts, expos and sports | Public calendar HTML |
 | `mplus` | M+ exhibitions | Public calendar HTML |
@@ -122,10 +123,26 @@ cargo build --release --no-default-features \
 cargo build --release --no-default-features --features source-taikwun
 ```
 
-The features are `source-lcsd`, `source-popticket`, `source-taikwun`,
-`source-awe`, `source-mplus` and `source-livenation`. `source-venues` enables
-all four venue/promoter calendars. Run `hkevents sources` to see what a binary
-contains.
+The features are `source-lcsd`, `source-popticket`, `source-partner`,
+`source-taikwun`, `source-awe`, `source-mplus` and `source-livenation`.
+`source-venues` enables all four venue/promoter calendars. Run
+`hkevents sources` to see what a binary contains.
+
+### Partner feed
+
+Cityline and Ticketflap do not publish a public discovery API. If either
+gives you a licensed JSON export, point the skill at it:
+
+```bash
+export HKEVENTS_PARTNER_FEED=/path/to/cityline-events.json
+# or
+HKEVENTS_PARTNER_FEED=https://partner.example/events.json hkevents list --source partner
+```
+
+The feed can be a bare array or `{"events": [...]}`. Recognised fields are
+`id`, `title`, `title_zh`, `start` (or `date`), `end`, `venue`, `category`,
+`price`, `description`, `presenter` and `url` (or `link`). Without the
+environment variable the adapter returns no rows and does not warn.
 
 ## Data
 

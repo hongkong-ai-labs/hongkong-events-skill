@@ -22,9 +22,11 @@ Use it when the user asks about:
 - ticket price, age limit, presenter, enquiry number or the organiser's link
 
 The sources cover **current and forthcoming events** from LCSD, POPTICKET,
-Tai Kwun, AsiaWorld-Expo, M+ and Live Nation HK. This is still not a complete
-list of every event in Hong Kong: Cityline and Ticketflap inventory, private
-gallery shows, district festivals and venue-hire events may be absent.
+Tai Kwun, AsiaWorld-Expo, M+ and Live Nation HK. A licensed Cityline or
+Ticketflap JSON export can be added through `HKEVENTS_PARTNER_FEED`. This is
+still not a complete list of every event in Hong Kong: unlicensed Cityline and
+Ticketflap inventory, private gallery shows, district festivals and venue-hire
+events may be absent.
 
 ## Before first use
 
@@ -94,7 +96,7 @@ omit it to search everything compiled in.
 
 | Field | Meaning |
 | --- | --- |
-| `source` | Source slug: `lcsd`, `popticket`, `taikwun`, `awe`, `mplus` or `livenation` |
+| `source` | Source slug: `lcsd`, `popticket`, `partner`, `taikwun`, `awe`, `mplus` or `livenation` |
 | `next_date` | First performance on or after today |
 | `dates` | Every published performance or exhibition date |
 | `date_text` | Original date text |
@@ -174,6 +176,7 @@ Tools:
 - AsiaWorld-Expo: `https://www.asiaworld-expo.com/en-us/whats-on/upcoming-events`.
 - M+: `https://www.mplus.org.hk/en/exhibitions/`.
 - Live Nation HK: `https://www.livenation.hk/`.
+- Licensed partner export: set `HKEVENTS_PARTNER_FEED` to a JSON path or URL.
 
 Event data remains subject to each publisher's terms; link to the original
 page. Responses are not cached between processes.

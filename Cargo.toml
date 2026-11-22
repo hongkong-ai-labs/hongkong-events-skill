@@ -15,11 +15,13 @@ name = "hkevents"
 path = "src/main.rs"
 
 [features]
-default = ["source-lcsd", "source-popticket", "source-venues"]
+default = ["source-lcsd", "source-popticket", "source-partner", "source-venues"]
 # Official LCSD cultural-programme XML feed.
 source-lcsd = ["dep:quick-xml"]
 # POPTICKET public event listing.
 source-popticket = []
+# Licensed Cityline/Ticketflap JSON export; needs HKEVENTS_PARTNER_FEED.
+source-partner = []
 # All venue and promoter calendars.
 source-venues = [
     "source-taikwun",

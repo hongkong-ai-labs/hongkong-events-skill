@@ -135,6 +135,12 @@ impl Client {
             Err(error) => warnings.push(format!("popticket: {error:#}")),
         }
 
+        #[cfg(feature = "source-partner")]
+        match crate::sources::partner::load(&self.http).await {
+            Ok(mut source_events) => events.append(&mut source_events),
+            Err(error) => warnings.push(format!("partner: {error:#}")),
+        }
+
         #[cfg(feature = "source-taikwun")]
         match crate::sources::venues::taikwun::load(&self.http).await {
             Ok(mut source_events) => events.append(&mut source_events),
