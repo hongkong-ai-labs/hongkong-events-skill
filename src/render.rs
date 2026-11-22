@@ -142,3 +142,120 @@ pub fn venues(venues: &[Venue]) -> String {
         .trim_end()
         .to_string()
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use chrono::NaiveDate;
+
+    fn event() -> Event {
+        Event {
+            id: "1".to_string(),
+            title_en: "Jazz Night".to_string(),
+            title_zh: String::new(),
+            category: "inc4".to_string(),
+            subcategory: "inc4sc1".to_string(),
+            venue_id: "100".to_string(),
+            venue: "Tai Po Civic Centre".to_string(),
+            dates: vec![NaiveDate::from_ymd_opt(2026, 12, 19).unwrap()],
+            next_date: Some(NaiveDate::from_ymd_opt(2026, 12, 19).unwrap()),
+            date_text: String::new(),
+            duration: String::new(),
+            price: String::new(),
+            age_limit: String::new(),
+            description: String::new(),
+            url: None,
+            presenter: String::new(),
+            enquiry: String::new(),
+        }
+    }
+
+    #[test]
+    fn list_reports_when_nothing_matches() {
+        assert_eq!(list(&[]), "No matching cultural programmes.");
+    }
+
+    #[test]
+    fn list_prefers_next_date_and_truncates_long_titles() {
+        let event = Event {
+            title_en: "An Extremely Long Programme Title That Will Not Fit In A Table Column"
+                .to_string(),
+            ..event()
+        };
+        let out = list(&[event]);
+        assert!(out.contains("2026-12-19"));
+        assert!(out.contains('…'));
+        assert!(out.contains("Tai Po Civic Centre"));
+    }
+
+    #[test]
+    fn list_falls_back_to_the_date_summary_when_undated() {
+        let event = Event {
+            next_date: None,
+            dates: Vec::new(),
+            date_text: "19/12/2026 (Sat)".to_string(),
+            ..event()
+        };
+        let out = list(&[event]);
+        assert!(out.contains("19/12/2026 (Sat)"));
+    }
+
+    #[test]
+    fn show_marks_missing_price_and_skips_optional_fields() {
+        let out = show(&event());
+        assert!(out.contains("Jazz Night"));
+        assert!(out.contains("Dates:     2026-12-19"));
+        assert!(out.contains("Price:     -"));
+        assert!(!out.contains("Duration:"));
+        assert!(!out.contains("Presenter:"));
+        assert!(!out.contains("Link:"));
+        assert!(out.contains("id: 1"));
+    }
+
+    #[test]
+    fn show_includes_optional_details() {
+        let event = Event {
+            title_zh: "爵士夜".to_string(),
+            duration: "1 hour".to_string(),
+            age_limit: "6".to_string(),
+            presenter: "LCSD".to_string(),
+            enquiry: "2268 7321".to_string(),
+            url: Some("https://example.test/event".to_string()),
+            description: "Live jazz from local players.".to_string(),
+            price: "$200".to_string(),
+            ..event()
+        };
+        let out = show(&event);
+        assert!(out.contains("爵士夜"));
+        assert!(out.contains("Duration:  1 hour"));
+        assert!(out.contains("Age:       6"));
+        assert!(out.contains("Presenter: LCSD"));
+        assert!(out.contains("Enquiry:   2268 7321"));
+        assert!(out.contains("https://example.test/event"));
+        assert!(out.contains("Live jazz from local players."));
+    }
+
+    #[test]
+    fn venues_format_coordinates_or_a_dash() {
+        let venue_rows = vec![
+            Venue {
+                id: "100".to_string(),
+                name_en: "Tai Po Civic Centre".to_string(),
+                name_zh: "大埔文娛中心".to_string(),
+                latitude: Some(22.45),
+                longitude: Some(114.16),
+            },
+            Venue {
+                id: "101".to_string(),
+                name_en: "Unknown Venue".to_string(),
+                name_zh: String::new(),
+                latitude: None,
+                longitude: None,
+            },
+        ];
+        let out = venues(&venue_rows);
+        assert!(out.contains("22.4500, 114.1600"));
+        assert!(out.contains("Unknown Venue"));
+        assert!(out.contains("-"));
+    }
+}
